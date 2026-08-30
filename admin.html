@@ -90,7 +90,7 @@
                                     rows="3"
                                     value={text} 
                                     onChange={(e) => setText(e.target.value)} 
-                                    placeholder="Tuliskan catatan untuk siswa..." 
+                                    placeholder="Beri catatan untuk siswa..." 
                                     className="w-full px-3.5 py-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                     autoFocus
                                 ></textarea>
@@ -221,7 +221,7 @@
             };
 
             if (loading) {
-                return <div className="h-screen flex items-center justify-center bg-slate-900 text-white font-bold">Memuat Panel Admin...</div>;
+                return <div className="h-screen flex items-center justify-center bg-slate-900 text-white font-bold">Silakan tunggu...</div>;
             }
 
             if (!isLoggedIn) {
@@ -230,7 +230,6 @@
                         <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 border border-slate-800">
                             <div className="text-center mb-6">
                                 <h2 className="text-2xl font-black text-slate-800">Panel Admin</h2>
-                                <p className="text-xs text-slate-500 mt-1">SI-PANDA - Akses Khusus Guru</p>
                             </div>
                             {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-lg font-bold">{error}</div>}
                             <form onSubmit={handleLogin} className="space-y-4">
@@ -242,7 +241,7 @@
                                     <label className="block text-xs font-bold text-slate-600 mb-1">Password</label>
                                     <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                                 </div>
-                                <button type="submit" className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-colors shadow-md cursor-pointer">MASUK KE PANEL</button>
+                                <button type="submit" className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-colors shadow-md cursor-pointer">LOGIN</button>
                             </form>
                             <div className="mt-4 text-center">
                                 <a href="index.html" className="text-xs text-blue-600 hover:underline">← Kembali ke Halaman Siswa</a>
@@ -268,6 +267,7 @@
         function AdminDashboardFull({ exams, results, students, materiList, onToggleStatus, onUpdateCatatan, onLogout }) {
             const [activeTab, setActiveTab] = useState('overview');
             const [loadingMateri, setLoadingMateri] = useState(false);
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
             const [aiMapel, setAiMapel] = useState(MAPEL_LIST[0]);
             const [aiFiles, setAiFiles] = useState([]);
@@ -300,7 +300,7 @@
             const removeAiFile = (index) => setAiFiles(prev => prev.filter((_, i) => i !== index));
 
             const handleGenerateAI = async () => {
-                if (aiFiles.length === 0) { alert("Silakan unggah minimal 1 file materi terlebih dahulu."); return; }
+                if (aiFiles.length === 0) { alert("Silakan upload materi terlebih dahulu."); return; }
                 setAiLoading(true); setAiGeneratedQuestions([]);
                 try {
                     const response = await fetch(WEB_APP_URL, {
@@ -310,7 +310,7 @@
                     const result = await response.json();
                     if (result.status === "success" && result.questions) {
                         setAiGeneratedQuestions(result.questions); setAiLoading(false);
-                        alert("Berhasil! AI telah membuat " + result.questions.length + " soal.");
+                        alert("Berhasil generate " + result.questions.length + " soal.");
                     } else { throw new Error(result.message || "Gagal memproses AI."); }
                 } catch (error) { alert("Terjadi kesalahan: " + error.message); setAiLoading(false); }
             };
@@ -395,9 +395,15 @@
             const navItemClass = (tabName) => `w-full text-left px-4 py-3 text-sm font-medium cursor-pointer transition-all flex items-center gap-3 border-l-4 ${activeTab === tabName ? 'bg-slate-700 border-cyan-400 text-white' : 'border-transparent text-slate-300 hover:bg-slate-700 hover:text-white'}`;
 
             return (
-                <div className="bg-gray-100 flex flex-col md:flex-row h-screen overflow-hidden font-sans">
+                <div className="bg-gray-100 flex h-screen overflow-hidden font-sans relative">
+                    {isSidebarOpen && (
+                        <div 
+                            className="fixed inset-0 bg-slate-900/60 z-30 md:hidden backdrop-blur-sm"
+                            onClick={() => setIsSidebarOpen(false)}
+                        ></div>
+                    )}
                     {/* SIDEBAR */}
-                    <div className="w-full md:w-64 bg-slate-800 flex flex-col z-20 shrink-0 overflow-y-auto">
+                        <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 flex flex-col shadow-2xl transition-transform transform md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                         <div className="p-4 border-b border-slate-700 flex items-center justify-between bg-slate-800 sticky top-0">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center text-slate-300 shrink-0 border border-slate-500">
@@ -412,12 +418,12 @@
                                 <Icon name="log-out" size={18} />
                             </button>
                         </div>
-                        <nav className="py-2 flex-1">
-                            <button onClick={() => setActiveTab('overview')} className={navItemClass('overview')}>Beranda</button>
-                            <button onClick={() => setActiveTab('ai-generator')} className={navItemClass('ai-generator')}>Generate Soal AI</button>
-                            <button onClick={() => setActiveTab('materi')} className={navItemClass('materi')}>Kelola Materi</button>
-                            <button onClick={() => setActiveTab('exams')} className={navItemClass('exams')}>Kelola Tugas</button>
-                            <button onClick={() => setActiveTab('results')} className={navItemClass('results')}>Rekap Nilai</button>
+                        <nav className="py-2 flex-1 overflow-y-auto">
+                            <button onClick={() => { setActiveTab('overview'); setIsSidebarOpen(false); }} className={navItemClass('overview')}>Beranda</button>
+                            <button onClick={() => { setActiveTab('ai-generator'); setIsSidebarOpen(false); }} className={navItemClass('ai-generator')}>Generate Soal AI</button>
+                            <button onClick={() => { setActiveTab('materi'); setIsSidebarOpen(false); }} className={navItemClass('materi')}>Kelola Materi</button>
+                            <button onClick={() => { setActiveTab('exams'); setIsSidebarOpen(false); }} className={navItemClass('exams')}>Kelola Tugas</button>
+                            <button onClick={() => { setActiveTab('results'); setIsSidebarOpen(false); }} className={navItemClass('results')}>Rekap Nilai</button>
                         </nav>
                         <div className="p-4 border-t border-slate-700">
                             <a href="index.html" className="text-xs text-slate-400 hover:text-white flex items-center gap-2">← Ke Halaman Siswa</a>
@@ -425,9 +431,16 @@
                     </div>
 
                     {/* KONTEN UTAMA */}
-                    <div className="flex-1 flex flex-col overflow-hidden relative bg-gray-100">
-                        <div className="bg-red-500 text-white p-3 shadow-md flex items-center z-20 shrink-0 w-full">
-                            <h2 className="font-bold text-sm uppercase tracking-wide">SI-PANDA 2026a</h2>
+                    <div className="flex-1 flex flex-col overflow-hidden bg-gray-100 min-w-0">
+                        <div className="bg-red-500 text-white p-3 shadow-md flex items-center z-20 w-full shrink-0">
+                            <button 
+                                onClick={() => setIsSidebarOpen(true)} 
+                                className="md:hidden mr-3 p-1 bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                            >
+                                <Icon name="list" size={20} />
+                            </button>
+                            <Icon name="list" size={20} className="hidden md:block mr-3 cursor-pointer opacity-80" />
+                            <h2 className="font-bold text-sm uppercase tracking-wide truncate">SI-PANDA 2026a</h2>
                         </div>
 
                         <div className="flex-1 p-4 lg:p-6 overflow-y-auto">

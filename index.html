@@ -170,18 +170,7 @@
                     questions: shuffledQuestions || [],
                     pgCount: pgCount || 0
                 };
-                    setAppData(prev => ({
-                    ...prev,
-                    results: [...prev.results, {
-                        waktu: payload.waktu,
-                        nisn: payload.nisn,
-                        nama: payload.nama,
-                        ujian: payload.ujian,
-                        nilai: payload.nilai,
-                        catatan: payload.catatan,
-                        pelanggaran: payload.pelanggaran
-                    }]
-                }));
+
                 fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -189,7 +178,21 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    console.log("Berhasil disimpan:", response);
+                    console.log("Response Server:", response);
+                    const finalScore = response.score !== undefined ? response.score : score;
+                
+                setAppData(prev => ({
+                    ...prev,
+                    results: [...prev.results, {
+                            waktu: timeStr,
+                            nisn: currentUser.nisn,
+                            nama: currentUser.name,
+                            ujian: examTitle,
+                            nilai: finalScore, // Menggunakan nilai dari AI server
+                            catatan: "",
+                            pelanggaran: cheatCount || 0
+                        }]
+                    }));
                 })
                 .catch(err => {
                     console.error("Gagal mengirim:", err);

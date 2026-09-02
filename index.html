@@ -161,7 +161,7 @@
                     action: "saveResult",
                     waktu: timeStr,
                     nisn: currentUser.nisn,
-                    nama: currentUser.name, // Sesuaikan dengan properti nama di state user Anda (name atau nama)
+                    nama: currentUser.name,
                     ujian: examTitle,
                     nilai: score,
                     catatan: "",
@@ -171,37 +171,19 @@
                     pgCount: pgCount || 0
                 };
 
-                setAppData(prev => ({
-                    ...prev,
-                    results: [...prev.results, {
-                        waktu: payload.waktu,
-                        nisn: payload.nisn,
-                        nama: payload.nama,
-                        ujian: payload.ujian,
-                        nilai: payload.nilai,
-                        catatan: payload.catatan,
-                        pelanggaran: payload.pelanggaran
-                    }]
-                }));
-
                 fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 })
                 .then(res => res.json())
-                .then(response => {
-                    console.log("Berhasil dinilai AI:", response);
+                .then(resJson => {
+                    console.log("Isi Respons dari Apps Script:", JSON.stringify(resJson));
                 })
-                .catch(err => {
-                    console.error("Isi Respons dari Apps Script:", JSON.stringify(response));
-                    setIsSubmitted(true);
-                })
-
                 .catch(err => {
                     console.error("Gagal mengirim:", err);
-                    setIsSubmitted(true);
                 });
+
                 setView('student');
                 setActiveExamData(null);
             };

@@ -170,15 +170,26 @@
                     questions: shuffledQuestions || [],
                     pgCount: pgCount || 0
                 };
-
+                    setAppData(prev => ({
+                    ...prev,
+                    results: [...prev.results, {
+                        waktu: payload.waktu,
+                        nisn: payload.nisn,
+                        nama: payload.nama,
+                        ujian: payload.ujian,
+                        nilai: payload.nilai,
+                        catatan: payload.catatan,
+                        pelanggaran: payload.pelanggaran
+                    }]
+                }));
                 fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 })
                 .then(res => res.json())
-                .then(resJson => {
-                    console.log("Isi Respons dari Apps Script:", JSON.stringify(resJson));
+                .then(response => {
+                    console.log("Berhasil disimpan:", , response);
                 })
                 .catch(err => {
                     console.error("Gagal mengirim:", err);

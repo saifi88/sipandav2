@@ -157,6 +157,20 @@
                 const examTitle = appData.exams.find(e => e.id === examId)?.title || 'Ujian';
                 const timeStr = new Date().toLocaleString("id-ID");
                 
+                // 1. UPDATE STATE LOKAL SECARA LANGSUNG (AGAR STATUS LANGSUNG BERUBAH SELESAI)
+                setAppData(prev => ({
+                    ...prev,
+                    results: [...prev.results, {
+                        waktu: timeStr,
+                        nisn: currentUser.nisn,
+                        nama: currentUser.name,
+                        ujian: examTitle,
+                        nilai: score, // Nilai sementara
+                        catatan: "",
+                        pelanggaran: cheatCount || 0
+                    }]
+                }));
+
                 const payload = {
                     action: "saveResult",
                     waktu: timeStr,
@@ -171,6 +185,7 @@
                     pgCount: pgCount || 0
                 };
 
+                // 2. KIRIM KE BACKEND GOOGLE SHEETS & AI DI LATAR BELAKANG
                 fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -178,26 +193,25 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    console.log("Response Server:", response);
-                    const finalScore = response.score !== undefined ? response.score : score;
-                
-                setAppData(prev => ({
-                    ...prev,
-                    results: [...prev.results, {
-                            waktu: timeStr,
-                            nisn: currentUser.nisn,
-                            nama: currentUser.name,
-                            ujian: examTitle,
-                            nilai: finalScore, // Menggunakan nilai dari AI server
-                            catatan: "",
-                            pelanggaran: cheatCount || 0
-                        }]
-                    }));
+                    console.log("Respon Server:", response);
+                    
+                    // Jika server mengembalikan nilai AI (misal 84), perbarui nilainya di state
+                    if (response.score !== undefined) {
+                        setAppData(prev => ({
+                            ...prev,
+                            results: prev.results.map(r => 
+                                (String(r.nisn) === String(currentUser.nisn) && String(r.ujian) === String(examTitle))
+                                    ? { ...r, nilai: response.score }
+                                    : r
+                            )
+                        }));
+                    }
                 })
                 .catch(err => {
                     console.error("Gagal mengirim:", err);
                 });
 
+                // 3. LANGSUNG KEMBALI KE DASHBOARD SISWA
                 setView('student');
                 setActiveExamData(null);
             };

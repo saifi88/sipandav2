@@ -691,7 +691,7 @@
                                                 {(!results || results.length === 0) ? (
                                                     <tr><td colSpan="7" className="p-6 text-center text-gray-400">Belum ada data masuk.</td></tr>
                                                 ) : (
-                                                    results.map((r, idx) => (
+                                                    results.slice().reverse().map((r, idx) => (
                                                         <ResultRow key={`${r.nisn}-${r.ujian}-${idx}`} r={r} onUpdateCatatan={onUpdateCatatan} />
                                                     ))
                                                 )}

@@ -157,35 +157,20 @@
                 const examTitle = appData.exams.find(e => e.id === examId)?.title || 'Ujian';
                 const timeStr = new Date().toLocaleString("id-ID");
                 
-                // 1. UPDATE STATE LOKAL SECARA LANGSUNG
-                setAppData(prev => ({
-                    ...prev,
-                    results: [...prev.results, {
-                        waktu: timeStr,
-                        nisn: currentUser.nisn,
-                        nama: currentUser.name,
-                        ujian: examTitle,
-                        nilai: score,
-                        catatan: "",
-                        pelanggaran: cheatCount || 0
-                    }]
-                }));
-
                 const payload = {
                     action: "saveResult",
                     waktu: timeStr,
                     nisn: currentUser.nisn,
                     nama: currentUser.name,
                     ujian: examTitle,
-                    nilai: score,
-                    catatan: "",
-                    pelanggaran: cheatCount || 0,
-                    jawabanEssay: jawabanEssayString || "{}",
+                    nilai: score, // Nilai dasar Pilihan Ganda
+                    pgCount: pgCount || 0,
                     questions: shuffledQuestions || [],
-                    pgCount: pgCount || 0
+                    jawabanEssay: jawabanEssayString || "{}",
+                    pelanggaran: cheatCount || 0
                 };
 
-                // 2. KIRIM KE BACKEND GOOGLE SHEETS
+                // 1. KIRIM KE BACKEND TERLEBIH DAHULU UNTUK MENDAPATKAN NILAI AI & CATATAN
                 fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -193,25 +178,36 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    console.log("Respon Server:", response);
-                    if (response.score !== undefined) {
-                        setAppData(prev => ({
-                            ...prev,
-                            results: prev.results.map(r => 
-                                (String(r.nisn) === String(currentUser.nisn) && String(r.ujian) === String(examTitle))
-                                    ? { ...r, nilai: response.score, catatan: response.catatan || "" }
-                                    : r
-                            )
-                        }));
-                    }
+                    console.log("Respon Server AI:", response);
+                    
+                    // Ambil nilai akhir & catatan dari balasan AI di code.gs
+                    const finalScore = response.score !== undefined ? response.score : score;
+                    const finalCatatan = response.catatan || "Pengerjaan berhasil disimpan.";
+
+                    // 2. UPDATE STATE LOKAL DENGAN NILAI & CATATAN VALID DARI AI
+                    setAppData(prev => ({
+                        ...prev,
+                        results: [...prev.results, {
+                            waktu: timeStr,
+                            nisn: currentUser.nisn,
+                            nama: currentUser.name,
+                            ujian: examTitle,
+                            nilai: finalScore,      // <-- Nilai akhir gabungan (PG + Esai AI)
+                            catatan: finalCatatan,  // <-- Catatan ulasan holistik dari AI
+                            pelanggaran: cheatCount || 0
+                        }]
+                    }));
+
+                    // 3. ARAHKAN SISWA KE HALAMAN HASIL / DASHBOARD DENGAN DATA YANG SUDAH JADI
+                    // (Opsional: Anda bisa langsung melemparkan data ini ke halaman ExamResult agar siswa bisa langsung melihatnya)
+                    setView('student');
+                    setActiveExamData(null);
                 })
                 .catch(err => {
                     console.error("Gagal mengirim:", err);
+                    alert("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+                    setView('student');
                 });
-
-                // 3. KEMBALI KE DASHBOARD SISWA
-                setView('student');
-                setActiveExamData(null);
             };
 
             const handleToggleExamStatus = (examId) => {
